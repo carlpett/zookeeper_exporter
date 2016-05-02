@@ -18,23 +18,24 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func metricsHandler(w http.ResponseWriter, r *http.Request) {
-  log.WithFields(log.Fields { "request": r }).Debug("Incoming request to /metrics")
+  log.WithFields(log.Fields { "request": r }).Debugf("Serving metrics request")
 
-  if formattedMetrics == nil {
-    log.Error("Call to /metrics before successfully collecting metrics from Zookeeper!")
+  metrics, ok := fetchMetrics()
 
+  if !ok {
+    log.Warning("Scrape failed")
     w.WriteHeader(http.StatusInternalServerError)
     w.Write([]byte("Internal server error"))
     return
   }
 
   w.WriteHeader(http.StatusOK)
-  w.Write(formattedMetrics)
+  w.Write(metrics)
 }
 
 func serveMetrics() {
-  log.Info("Starting metric http endpoint on :8090")
-  http.HandleFunc("/metrics", metricsHandler)
+  log.Infof("Starting metric http endpoint on %s", *bindAddr)
+  http.HandleFunc(*metricsPath, metricsHandler)
   http.HandleFunc("/", rootHandler)
-  log.Fatal(http.ListenAndServe(":8090", nil))
+  log.Fatal(http.ListenAndServe(*bindAddr, nil))
 }

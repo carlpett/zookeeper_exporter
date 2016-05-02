@@ -10,14 +10,14 @@ import (
   log "github.com/Sirupsen/logrus"
 )
 
-func updateMetrics() {
-  log.Info("Updating metrics from Zookeeper")
+func fetchMetrics() ([]byte, bool) {
+  log.Debug("Fetching metrics from Zookeeper")
 
   data, ok := sendZkCommand("mntr")
 
   if !ok {
-    log.Error("Failed to update metrics")
-    return
+    log.Error("Failed to fetch metrics")
+    return nil, false
   }
 
   buffer := bytes.Buffer {}
@@ -29,7 +29,7 @@ func updateMetrics() {
     }
   }
 
-  formattedMetrics = buffer.Bytes()
+  return buffer.Bytes(), true
 }
 func resetStatistics() {
   log.Info("Resetting Zookeeper statistics")
@@ -39,18 +39,18 @@ func resetStatistics() {
   }
 }
 
-func replace(pattern string, foobar string, template string) string {
+func replace(pattern string, source string, template string) string {
   r, _ := regexp.Compile(pattern)
-  m := r.FindStringSubmatchIndex(foobar)
+  m := r.FindStringSubmatchIndex(source)
 
   res := []byte{}
-  return string(r.ExpandString(res, template, foobar, m))
+  return string(r.ExpandString(res, template, source, m))
 }
 
 func sendZkCommand(fourLetterWord string) (string, bool) {
-  log.Debug("Connecting to Zookeeper at localhost:2181")
+  log.Debugf("Connecting to Zookeeper at %s", *zookeeperAddr)
 
-  conn, err := net.Dial("tcp", "localhost:2181")
+  conn, err := net.Dial("tcp", *zookeeperAddr)
   if err != nil {
     log.WithFields(log.Fields { "error": err }).Error("Unable to open connection to Zookeeper")
     return "", false
