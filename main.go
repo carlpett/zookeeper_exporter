@@ -15,7 +15,7 @@ type Stat struct {
   Pattern string  `yaml:"pattern"`
   Template string `yaml:"template"`
 }
-var stats map[string] Stat = loadStatsDefinitions()
+var stats map[string] Stat
 
 func init() {
   flag.Parse()
@@ -36,6 +36,8 @@ var statsFile = flag.String("stats-file", "stats.yml", "yaml file containing sta
 func main() {
   log.SetLevel(logLevel)
   log.Info("Starting zookeeper_exporter")
+
+  stats = loadStatsDefinitions()
 
   go serveMetrics()
 
