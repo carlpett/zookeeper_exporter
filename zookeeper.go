@@ -11,7 +11,7 @@ import (
 )
 
 func fetchMetrics() ([]byte, bool) {
-  log.Debug("Fetching metrics from Zookeeper")
+  log.Info("Fetching metrics from Zookeeper")
 
   data, ok := sendZkCommand("mntr")
 
