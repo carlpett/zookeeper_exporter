@@ -8,13 +8,13 @@ zk_max_latency:
   pattern: 'zk_max_latency\s+(\d+)'
   template: |
     #HELP zk_max_latency Maximum seen latency of requests
-    #TYPE zk_max_latency counter
+    #TYPE zk_max_latency gauge
     zk_max_latency $1
 zk_min_latency:
   pattern: 'zk_min_latency\s+(\d+)'
   template: |
-    # HELP zk_avg_latency Minimum latency of requests
-    # TYPE zk_avg_latency counter
+    # HELP zk_avg_latency Minimum seen latency of requests
+    # TYPE zk_avg_latency gauge
     zk_min_latency $1
 zk_packets_received:
   pattern: 'zk_packets_received\s+(\d+)'
@@ -32,43 +32,43 @@ zk_num_alive_connections:
   pattern: 'zk_num_alive_connections\s+(\d+)'
   template: |
     # HELP zk_num_alive_connections Number of active connections
-    # TYPE zk_num_alive_connections counter
+    # TYPE zk_num_alive_connections gauge
     zk_num_alive_connections $1
 zk_outstanding_requests:
   pattern: 'zk_outstanding_requests\s+(\d+)'
   template: |
     # HELP zk_outstanding_requests Number of outstanding requests
-    # TYPE zk_outstanding_requests counter
+    # TYPE zk_outstanding_requests gauge
     zk_outstanding_requests $1
 zk_server_state:
   pattern: 'zk_server_state\s+(\w+)'
   template: |
-    # HELP zk_server_state Minimum latency of requests
-    # TYPE zk_server_state counter
+    # HELP zk_server_state Server state (leader/follower)
+    # TYPE zk_server_state untyped
     zk_server_state{state="$1"} 1
 zk_znode_count:
   pattern: 'zk_znode_count\s+(\d+)'
   template: |
     # HELP zk_znode_count Number of znodes
-    # TYPE zk_znode_count counter
+    # TYPE zk_znode_count gauge
     zk_znode_count $1
 zk_watch_count:
   pattern: 'zk_watch_count\s+(\d+)'
   template: |
     # HELP zk_watch_count Number of watches
-    # TYPE zk_watch_count counter
+    # TYPE zk_watch_count gauge
     zk_watch_count $1
 zk_ephemerals_count:
   pattern: 'zk_ephemerals_count\s+(\d+)'
   template: |
     # HELP zk_ephemerals_count Number of ephemeral nodes
-    # TYPE zk_ephemerals_count counter
+    # TYPE zk_ephemerals_count gauge
     zk_ephemerals_count $1
 zk_approximate_data_size:
   pattern: 'zk_approximate_data_size\s+(\d+)'
   template: |
     # HELP zk_approximate_data_size Approximate size of data set
-    # TYPE zk_approximate_data_size counter
+    # TYPE zk_approximate_data_size gauge
     zk_approximate_data_size $1
 zk_open_file_descriptor_count:
   pattern: 'zk_open_file_descriptor_count\s+(\d+)'
