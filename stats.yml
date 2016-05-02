@@ -13,8 +13,8 @@ zk_max_latency:
 zk_min_latency:
   pattern: 'zk_min_latency\s+(\d+)'
   template: |
-    # HELP zk_avg_latency Minimum seen latency of requests
-    # TYPE zk_avg_latency gauge
+    # HELP zk_min_latency Minimum seen latency of requests
+    # TYPE zk_min_latency gauge
     zk_min_latency $1
 zk_packets_received:
   pattern: 'zk_packets_received\s+(\d+)'
