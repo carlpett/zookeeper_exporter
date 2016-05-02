@@ -31,6 +31,9 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 
   w.WriteHeader(http.StatusOK)
   w.Write(metrics)
+
+  // Reset stats after each scrape, since it is the only way of getting something at least almost consistent
+  resetStatistics()
 }
 
 func serveMetrics() {

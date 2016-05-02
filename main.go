@@ -8,7 +8,6 @@ import (
   "syscall"
 
   "gopkg.in/yaml.v2"
-  "github.com/jasonlvhit/gocron"
   log "github.com/Sirupsen/logrus"
 )
 
@@ -38,19 +37,12 @@ func main() {
   log.SetLevel(logLevel)
   log.Info("Starting zookeeper_exporter")
 
-  go scheduleReset()
   go serveMetrics()
 
   exitChannel := make(chan os.Signal)
   signal.Notify(exitChannel, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
   exitSignal := <- exitChannel
   log.WithFields(log.Fields { "signal": exitSignal }).Infof("Caught %s signal, exiting", exitSignal)
-}
-
-func scheduleReset() {
-  log.Info("Scheduling hourly reset")
-  gocron.Every(1).Hour().Do(resetStatistics)
-  <- gocron.Start()
 }
 
 func loadStatsDefinitions() map[string] Stat {
