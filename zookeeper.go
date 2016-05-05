@@ -13,6 +13,7 @@ import (
 
 
 type zookeeperCollector struct {
+  upIndicator *prometheus.Desc
   metrics map[string] zookeeperMetric
 }
 type zookeeperMetric struct {
@@ -36,6 +37,7 @@ func parseFloatOrZero(s string) float64 {
 }
 func NewZookeeperCollector() *zookeeperCollector {
   return &zookeeperCollector {
+    upIndicator: prometheus.NewDesc("zk_up", "Exporter successful", nil, nil),
     metrics: map[string] zookeeperMetric {
       "zk_avg_latency": {
         desc: prometheus.NewDesc("zk_avg_latency", "Average latency of requests", nil, nil),
@@ -149,6 +151,7 @@ func (c *zookeeperCollector) Collect(ch chan<- prometheus.Metric) {
 
   if !ok {
     log.Error("Failed to fetch metrics")
+    ch <- prometheus.MustNewConstMetric(c.upIndicator, prometheus.GaugeValue, 0)
     return
   }
 
@@ -166,6 +169,7 @@ func (c *zookeeperCollector) Collect(ch chan<- prometheus.Metric) {
       }
     }
   }
+  ch <- prometheus.MustNewConstMetric(c.upIndicator, prometheus.GaugeValue, 1)
 
   resetStatistics()
 }
