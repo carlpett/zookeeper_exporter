@@ -2,20 +2,14 @@ package main
 
 import (
   "flag"
-  "io/ioutil"
+  "net/http"
   "os"
   "os/signal"
   "syscall"
 
-  "gopkg.in/yaml.v2"
+  "github.com/prometheus/client_golang/prometheus"
   log "github.com/Sirupsen/logrus"
 )
-
-type Stat struct {
-  Pattern string  `yaml:"pattern"`
-  Template string `yaml:"template"`
-}
-var stats map[string] Stat
 
 func init() {
   flag.Parse()
@@ -31,13 +25,10 @@ var bindAddr = flag.String("bind-addr", ":9141", "bind address for the metrics s
 var metricsPath = flag.String("metrics-path", "/metrics", "path to metrics endpoint")
 var zookeeperAddr = flag.String("zookeeper", "localhost:2181", "host:port for zookeeper socket")
 var rawLevel = flag.String("log-level", "info", "log level")
-var statsFile = flag.String("stats-file", "stats.yml", "yaml file containing stats definitions")
 
 func main() {
   log.SetLevel(logLevel)
   log.Info("Starting zookeeper_exporter")
-
-  stats = loadStatsDefinitions()
 
   go serveMetrics()
 
@@ -47,18 +38,19 @@ func main() {
   log.WithFields(log.Fields { "signal": exitSignal }).Infof("Caught %s signal, exiting", exitSignal)
 }
 
-func loadStatsDefinitions() map[string] Stat {
-  log.WithFields(log.Fields {"file": *statsFile}).Debug("Loading parser definitions")
-  data, err := ioutil.ReadFile(*statsFile)
-  if err != nil {
-    log.WithFields(log.Fields { "error": err, "file": *statsFile }).Fatal("Unable to load parser definitions")
-  }
-
-  stats := make(map[string]Stat)
-  err = yaml.Unmarshal(data, &stats)
-  if err != nil {
-    log.WithFields(log.Fields { "error": err }).Fatal("Could not parse parser definitions")
-  }
-
-  return stats
+func serveMetrics() {
+  log.Infof("Starting metric http endpoint on %s", *bindAddr)
+  http.Handle(*metricsPath, prometheus.Handler())
+  http.HandleFunc("/", rootHandler)
+  log.Fatal(http.ListenAndServe(*bindAddr, nil))
+}
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+  w.WriteHeader(http.StatusOK)
+  w.Write([]byte(`<html>
+      <head><title>Zookeeper Exporter</title></head>
+      <body>
+      <h1>Zookeeper Exporter</h1>
+      <p><a href="` + *metricsPath + `">Metrics</a></p>
+      </body>
+      </html>`))
 }

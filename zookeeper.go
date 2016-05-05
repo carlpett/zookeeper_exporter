@@ -4,32 +4,170 @@ import (
   "bufio"
   "bytes"
   "net"
-  "regexp"
   "strings"
+  "strconv"
 
+  "github.com/prometheus/client_golang/prometheus"
   log "github.com/Sirupsen/logrus"
 )
 
-func fetchMetrics() ([]byte, bool) {
+
+type zookeeperCollector struct {
+  metrics map[string] zookeeperMetric
+}
+type zookeeperMetric struct {
+  desc *prometheus.Desc
+  extract func(string) float64
+  extractLabels func(s string) []string
+  valType prometheus.ValueType
+}
+
+func init() {
+  prometheus.MustRegister(NewZookeeperCollector())
+}
+
+func parseFloatOrZero(s string) float64 {
+  res, err := strconv.ParseFloat(s, 64)
+  if err != nil {
+    log.Warningf("Failed to parse to float64: %s", err)
+    return 0.0
+  }
+  return res
+}
+func NewZookeeperCollector() *zookeeperCollector {
+  return &zookeeperCollector {
+    metrics: map[string] zookeeperMetric {
+      "zk_avg_latency": {
+        desc: prometheus.NewDesc("zk_avg_latency", "Average latency of requests", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_max_latency": {
+        desc: prometheus.NewDesc("zk_max_latency", "Maximum seen latency of requests", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_min_latency": {
+        desc: prometheus.NewDesc("zk_min_latency", "Minimum seen latency of requests", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_packets_received": {
+        desc: prometheus.NewDesc("zk_packets_received", "Number of packets received", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.CounterValue,
+      },
+      "zk_packets_sent": {
+        desc: prometheus.NewDesc("zk_packets_sent", "Number of packets sent", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.CounterValue,
+      },
+      "zk_num_alive_connections": {
+        desc: prometheus.NewDesc("zk_num_alive_connections", "Number of active connections", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_outstanding_requests": {
+        desc: prometheus.NewDesc("zk_outstanding_requests", "Number of outstanding requests", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_server_state": {
+        desc: prometheus.NewDesc("zk_server_state", "Server state (leader/follower)", []string {"leader", "follower"}, nil),
+        extract: func(s string) float64 { return 1 },
+        extractLabels: func(s string) []string {
+          if s == "leader" {
+            return []string {"1", "0"}
+          } else if s == "follower" {
+            return []string {"0", "1"}
+          } else {
+            return []string {"0", "0"}
+          }
+        },
+        valType: prometheus.UntypedValue,
+      },
+      "zk_znode_count": {
+        desc: prometheus.NewDesc("zk_znode_count", "Number of znodes", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_watch_count": {
+        desc: prometheus.NewDesc("zk_watch_count", "Number of watches", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_ephemerals_count": {
+        desc: prometheus.NewDesc("zk_ephemerals_count", "Number of ephemeral nodes", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_approximate_data_size": {
+        desc: prometheus.NewDesc("zk_approximate_data_size", "Approximate size of data set", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_open_file_descriptor_count": {
+        desc: prometheus.NewDesc("zk_open_file_descriptor_count", "Number of open file descriptors", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_max_file_descriptor_count": {
+        desc: prometheus.NewDesc("zk_max_file_descriptor_count", "Maximum number of open file descriptors", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.CounterValue,
+      },
+      "zk_followers": {
+        desc: prometheus.NewDesc("zk_followers", "Number of followers", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_synced_followers": {
+        desc: prometheus.NewDesc("zk_synced_followers", "Number of followers in sync", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+      "zk_pending_syncs": {
+        desc: prometheus.NewDesc("zk_pending_syncs", "Number of followers with syncronizations pending", nil, nil),
+        extract: func(s string) float64 { return parseFloatOrZero(s) },
+        valType: prometheus.GaugeValue,
+      },
+    },
+  }
+}
+
+func (c *zookeeperCollector) Describe(ch chan<- *prometheus.Desc) {
+  log.Debugf("Sending %d metrics descriptions", len(c.metrics))
+  for _, i := range c.metrics {
+    ch <- i.desc
+  }
+}
+
+func (c *zookeeperCollector) Collect(ch chan<- prometheus.Metric) {
   log.Info("Fetching metrics from Zookeeper")
 
   data, ok := sendZkCommand("mntr")
 
   if !ok {
     log.Error("Failed to fetch metrics")
-    return nil, false
+    return
   }
 
-  buffer := bytes.Buffer {}
+  data = strings.TrimSpace(data)
   for _, line := range strings.Split(data, "\n") {
-    label := strings.Split(line, "\t")[0]
-    stat, ok := stats[label]
+    parts := strings.Split(line, "\t")
+    label, value := parts[0], parts[1]
+    metric, ok := c.metrics[label]
     if ok {
-      buffer.WriteString(replace(stat.Pattern, line, stat.Template))
+      log.Debugf("Sending metric %s=%s", label, value)
+      if metric.extractLabels != nil {
+        ch <- prometheus.MustNewConstMetric(metric.desc, metric.valType, metric.extract(value), metric.extractLabels(value)...)
+      } else {
+        ch <- prometheus.MustNewConstMetric(metric.desc, metric.valType, metric.extract(value))
+      }
     }
   }
 
-  return buffer.Bytes(), true
+  resetStatistics()
 }
 func resetStatistics() {
   log.Info("Resetting Zookeeper statistics")
@@ -37,14 +175,6 @@ func resetStatistics() {
   if !ok {
     log.Warning("Failed to reset statistics")
   }
-}
-
-func replace(pattern string, source string, template string) string {
-  r, _ := regexp.Compile(pattern)
-  m := r.FindStringSubmatchIndex(source)
-
-  res := []byte{}
-  return string(r.ExpandString(res, template, source, m))
 }
 
 func sendZkCommand(fourLetterWord string) (string, bool) {
