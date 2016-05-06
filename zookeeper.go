@@ -75,16 +75,10 @@ func NewZookeeperCollector() *zookeeperCollector {
         valType: prometheus.GaugeValue,
       },
       "zk_server_state": {
-        desc: prometheus.NewDesc("zk_server_state", "Server state (leader/follower)", []string {"leader", "follower"}, nil),
+        desc: prometheus.NewDesc("zk_server_state", "Server state (leader/follower)", []string {"state"}, nil),
         extract: func(s string) float64 { return 1 },
         extractLabels: func(s string) []string {
-          if s == "leader" {
-            return []string {"1", "0"}
-          } else if s == "follower" {
-            return []string {"0", "1"}
-          } else {
-            return []string {"0", "0"}
-          }
+          return []string{ s }
         },
         valType: prometheus.UntypedValue,
       },
