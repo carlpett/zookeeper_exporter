@@ -25,6 +25,7 @@ var bindAddr = flag.String("bind-addr", ":9141", "bind address for the metrics s
 var metricsPath = flag.String("metrics-path", "/metrics", "path to metrics endpoint")
 var zookeeperAddr = flag.String("zookeeper", "localhost:2181", "host:port for zookeeper socket")
 var rawLevel = flag.String("log-level", "info", "log level")
+var resetOnScrape = flag.Bool("reset-on-scrape", true, "should a reset command be sent to zookeeper on each scrape")
 
 func main() {
   log.SetLevel(logLevel)
