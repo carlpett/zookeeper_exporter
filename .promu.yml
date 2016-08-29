@@ -15,6 +15,8 @@ build:
         -X {{repoPath}}/version.Branch={{.Branch}}
         -X {{repoPath}}/version.BuildUser={{user}}@{{host}}
         -X {{repoPath}}/version.BuildDate={{date "20060829-15:04:05"}}
+tarball:
+    prefix: .
 crossbuild:
     platforms:
         - linux/amd64
