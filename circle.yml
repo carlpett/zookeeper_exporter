@@ -1,8 +1,4 @@
 machine:
-  environment:
-    DOCKER_TEST_IMAGE_NAME: quay.io/prometheus/golang-builder:1.6-base
-    REPO_PATH: github.com/prometheus/promu
-    FULL_REPO_PATH: ${GOPATH%%:*}/src/$REPO_PATH
   pre:
     - sudo curl -L -o /usr/bin/docker 'https://s3-external-1.amazonaws.com/circle-downloads/docker-1.9.1-circleci'
     - sudo chmod 0755 /usr/bin/docker
@@ -12,14 +8,16 @@ machine:
 
 dependencies:
   pre:
-    - go get -u github.com/prometheus/promu
-    - mkdir -p $(dirname $FULL_REPO_PATH) && ln -s $(pwd) $FULL_REPO_PATH
     - make promu
     - docker info
   override:
     - promu crossbuild
   post:
     - mkdir $CIRCLE_ARTIFACTS/binaries/ && cp -a .build/* $CIRCLE_ARTIFACTS/binaries/
+
+test:
+  override:
+    - echo "No tests"
 
 deployment:
   hub_tag:
