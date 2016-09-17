@@ -63,11 +63,17 @@
 			"revisionTime": "2016-04-11T19:08:41Z"
 		},
 		{
+			"checksumSHA1": "C9M2krbC70VLcOAWeXrkHTE4Gto=",
+			"path": "github.com/prometheus/promu",
+			"revision": "f95ac4e08f73107ee6059b0b354fe639e9401854",
+			"revisionTime": "2016-09-17T08:44:27Z"
+		},
+		{
 			"checksumSHA1": "QcDlr1sWBDt6Dn/v7W/MRgccAi4=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "076b546753157f758b316e59bcb51e6807c04057",
 			"revisionTime": "2016-06-01T13:19:39Z"
 		}
 	],
-	"rootPath": "github.com/deathowl/zookeeper_exporter"
+	"rootPath": "github.com/carlpett/zookeeper_exporter"
 }
