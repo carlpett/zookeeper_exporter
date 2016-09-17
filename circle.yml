@@ -12,6 +12,7 @@ machine:
 
 dependencies:
   pre:
+    - go get -u github.com/prometheus/promu
     - mkdir -p $(dirname $FULL_REPO_PATH) && ln -s $(pwd) $FULL_REPO_PATH
     - make promu
     - docker info
