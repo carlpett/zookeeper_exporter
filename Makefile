@@ -16,8 +16,9 @@ FIRST_GOPATH := $(firstword $(subst :, ,$(GOPATH)))
 PROMU        := $(FIRST_GOPATH)/bin/promu
 pkgs          = $(shell $(GO) list ./... | grep -v /vendor/)
 
-PREFIX                  ?= $(shell pwd)
+PREFIX                  ?= $(shell pwd)/.build
 BIN_DIR                 ?= $(shell pwd)
+DOCKER_REGISTRY			?= 
 DOCKER_IMAGE_NAME       ?= zk_exporter
 DOCKER_IMAGE_TAG        ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 
@@ -48,9 +49,9 @@ tarball: promu
 	@echo ">> building release tarball"
 	@$(PROMU) tarball --prefix $(PREFIX) $(BIN_DIR)
 
-docker:
+docker: build
 	@echo ">> building docker image"
-	@docker build -t "$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)" .
+	@docker build -t "$(DOCKER_REGISTRY)$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)" .
 
 promu:
 	@GOOS=$(shell uname -s | tr A-Z a-z) \
