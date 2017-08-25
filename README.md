@@ -1,4 +1,5 @@
-## zookeeper_exporter
+## zookeeper_exporter [![CircleCI](https://circleci.com/gh/carlpett/zookeeper_exporter.svg?style=shield)](https://circleci.com/gh/carlpett/zookeeper_exporter)
+
 A very simple prometheus exporter for zookeeper 3.4+. 
 
 ### Limitations
