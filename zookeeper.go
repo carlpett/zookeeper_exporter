@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
@@ -149,8 +150,14 @@ func (c *zookeeperCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	data = strings.TrimSpace(data)
+	status := 1.0
 	for _, line := range strings.Split(data, "\n") {
 		parts := strings.Split(line, "\t")
+		if len(parts) != 2 {
+			log.WithFields(log.Fields{"data": line}).Warn("Unexpected format of returned data, expected tab-separated key/value.")
+			status = 0
+			continue
+		}
 		label, value := parts[0], parts[1]
 		metric, ok := c.metrics[label]
 		if ok {
@@ -162,7 +169,7 @@ func (c *zookeeperCollector) Collect(ch chan<- prometheus.Metric) {
 			}
 		}
 	}
-	ch <- prometheus.MustNewConstMetric(c.upIndicator, prometheus.GaugeValue, 1)
+	ch <- prometheus.MustNewConstMetric(c.upIndicator, prometheus.GaugeValue, status)
 
 	if *resetOnScrape {
 		resetStatistics()
@@ -176,6 +183,10 @@ func resetStatistics() {
 	}
 }
 
+const (
+	timeoutSeconds = 5
+)
+
 func sendZkCommand(fourLetterWord string) (string, bool) {
 	log.Debugf("Connecting to Zookeeper at %s", *zookeeperAddr)
 
@@ -186,8 +197,18 @@ func sendZkCommand(fourLetterWord string) (string, bool) {
 	}
 	defer conn.Close()
 
+	err = conn.SetDeadline(time.Now().Add(timeoutSeconds * time.Second))
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Error("Failed to set timeout on Zookeeper connection")
+		return "", false
+	}
+
 	log.WithFields(log.Fields{"command": fourLetterWord}).Debug("Sending four letter word")
-	conn.Write([]byte(fourLetterWord))
+	_, err = conn.Write([]byte(fourLetterWord))
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Error("Error sending command to Zookeeper")
+		return "", false
+	}
 	scanner := bufio.NewScanner(conn)
 
 	buffer := bytes.Buffer{}
