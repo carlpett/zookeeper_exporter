@@ -16,7 +16,7 @@ RUN dep ensure -vendor-only
 # Copy all project and build it
 # This layer is rebuilt when ever a file has changed in the project directory
 COPY . /go/src/zookeeper-exporter/
-RUN go build -o /bin/zookeeper-exporter
+RUN go build -ldflags "-linkmode external -extldflags -static" -a -o /bin/zookeeper-exporter
 
 # This results in a single layer image
 FROM scratch
