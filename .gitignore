@@ -1,1 +1,4 @@
 .build
+vendor/
+zookeeper_exporter
+zookeeper-exporter
