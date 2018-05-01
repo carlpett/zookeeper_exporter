@@ -1,62 +1,34 @@
-# Copyright 2015 The Prometheus Authors
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+BUILDINFO = $(subst ${GOPATH}/src/,,${PWD})/vendor/github.com/prometheus/common/version
 
-GO           := GO15VENDOREXPERIMENT=1 go
-FIRST_GOPATH := $(firstword $(subst :, ,$(GOPATH)))
-PROMU        := $(FIRST_GOPATH)/bin/promu
-pkgs          = $(shell $(GO) list ./... | grep -v /vendor/)
+VERSION  = $(shell git describe --always --tags --dirty=-dirty)
+REVISION = $(shell git rev-parse HEAD)
+BRANCH   = $(shell git rev-parse --abbrev-ref HEAD)
 
-PREFIX                  ?= $(shell pwd)/.build
-BIN_DIR                 ?= $(shell pwd)
-DOCKER_REGISTRY			?= 
-DOCKER_IMAGE_NAME       ?= zk_exporter
-DOCKER_IMAGE_TAG        ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
+DOCKER_REPO       = carlpett
+DOCKER_IMAGE_NAME = zookeeper_exporter
+DOCKER_IMAGE_TAG  = ${VERSION}
 
-ifdef DEBUG
-	bindata_flags = -debug
-endif
+all: build
 
+build:
+	@echo ">> building zookeeper_exporter"
+	@CGO_ENABLED=0 go build -ldflags "\
+            -X ${BUILDINFO}.Version=${VERSION} \
+            -X ${BUILDINFO}.Revision=${REVISION} \
+            -X ${BUILDINFO}.Branch=${BRANCH} \
+            -X ${BUILDINFO}.BuildUser=$(USER)@$(HOSTNAME) \
+            -X ${BUILDINFO}.BuildDate=$(shell date +%Y-%m-%dT%T%z)"
 
-all: format build
+docker:
+	@echo ">> building docker image ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+	@docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} .
 
-style:
-	@echo ">> checking code style"
-	@! gofmt -d $(shell find . -path ./vendor -prune -o -name '*.go' -print) | grep '^'
+release: build bin/github-release
+	@echo ">> uploading release ${VERSION}"
+	@./bin/github-release upload -t ${VERSION} -n zookeeper_exporter -f zookeeper_exporter
 
-format:
-	@echo ">> formatting code"
-	@$(GO) fmt $(pkgs)
+bin/github-release:
+	@mkdir -p bin
+	@curl -sL 'https://github.com/aktau/github-release/releases/download/v0.6.2/linux-amd64-github-release.tar.bz2' | tar xjf - --strip-components 3 -C bin
 
-vet:
-	@echo ">> vetting code"
-	@$(GO) vet $(pkgs)
-
-build: promu
-	@echo ">> building binaries"
-	@$(PROMU) build --prefix $(PREFIX)
-
-tarball: promu
-	@echo ">> building release tarball"
-	@$(PROMU) tarball --prefix $(PREFIX) $(BIN_DIR)
-
-docker: build
-	@echo ">> building docker image"
-	@docker build -t "$(DOCKER_REGISTRY)$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)" .
-
-promu:
-	@GOOS=$(shell uname -s | tr A-Z a-z) \
-	GOARCH=$(subst x86_64,amd64,$(patsubst i%86,386,$(shell uname -m))) \
-	$(GO) get -u github.com/prometheus/promu
-
-
-.PHONY: all style format build vet tarball docker promu
+.PHONY: all build docker release

@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/carlpett/zookeeper_exporter
+    steps:
+      - checkout
+      - run: make build
+  release:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/carlpett/zookeeper_exporter
+    steps:
+      - checkout
+      - run: make release
+      - store_artifacts:
+          path: zookeeper_exporter
+          destination: releases
+
+workflows:
+  version: 2
+  build_and_release:
+    jobs:
+      - build
+      - release:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/

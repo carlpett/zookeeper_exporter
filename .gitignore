@@ -1,1 +1,2 @@
-.build
+zookeeper_exporter
+bin/
