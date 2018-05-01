@@ -9,6 +9,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/version"
 )
 
 func init() {
@@ -19,17 +20,27 @@ func init() {
 		log.Fatal(err)
 	}
 	logLevel = parsedLevel
+
+	prometheus.MustRegister(version.NewCollector("zookeeper_exporter"))
 }
 
-var logLevel log.Level = log.InfoLevel
-var bindAddr = flag.String("bind-addr", ":9141", "bind address for the metrics server")
-var metricsPath = flag.String("metrics-path", "/metrics", "path to metrics endpoint")
-var zookeeperAddr = flag.String("zookeeper", "localhost:2181", "host:port for zookeeper socket")
-var rawLevel = flag.String("log-level", "info", "log level")
-var resetOnScrape = flag.Bool("reset-on-scrape", true, "should a reset command be sent to zookeeper on each scrape")
+var (
+	logLevel      log.Level = log.InfoLevel
+	bindAddr                = flag.String("bind-addr", ":9141", "bind address for the metrics server")
+	metricsPath             = flag.String("metrics-path", "/metrics", "path to metrics endpoint")
+	zookeeperAddr           = flag.String("zookeeper", "localhost:2181", "host:port for zookeeper socket")
+	rawLevel                = flag.String("log-level", "info", "log level")
+	resetOnScrape           = flag.Bool("reset-on-scrape", true, "should a reset command be sent to zookeeper on each scrape")
+	showVersion             = flag.Bool("version", false, "show version and exit")
+)
 
 func main() {
+	log.Info(version.Print("zookeeper_exporter"))
 	log.SetLevel(logLevel)
+	if *showVersion {
+		return
+	}
+
 	log.Info("Starting zookeeper_exporter")
 
 	go serveMetrics()
