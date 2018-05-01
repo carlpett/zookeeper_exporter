@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/version"
+	log "github.com/sirupsen/logrus"
 )
 
 func init() {
