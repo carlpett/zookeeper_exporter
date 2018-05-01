@@ -7,6 +7,9 @@ jobs:
     steps:
       - checkout
       - run: make build
+      - store_artifacts:
+          path: zookeeper_exporter
+          destination: zookeeper_exporter
   release:
     docker:
       - image: circleci/golang:1.10
@@ -14,13 +17,10 @@ jobs:
     steps:
       - checkout
       - run: make release
-      - store_artifacts:
-          path: zookeeper_exporter
-          destination: releases
 
 workflows:
   version: 2
-  build_and_release:
+  github:
     jobs:
       - build
       - release:
