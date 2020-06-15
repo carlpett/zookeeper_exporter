@@ -21,12 +21,29 @@ func init() {
 	}
 	logLevel = parsedLevel
 
+	if *enableTLS && (*certPath == "" || *certKeyPath == "") {
+		log.Fatal("-enable-tls requires -cert and -cert-key")
+	}
+
+	if *logJSON {
+		log.SetFormatter(&log.JSONFormatter{})
+	} else {
+		log.SetFormatter(&log.TextFormatter{
+			DisableColors: true,
+			FullTimestamp: true,
+		})
+	}
+
 	prometheus.MustRegister(version.NewCollector("zookeeper_exporter"))
 }
 
 var (
 	logLevel      log.Level = log.InfoLevel
+	logJSON                 = flag.Bool("log-json", false, "Log output as JSON")
 	bindAddr                = flag.String("bind-addr", ":9141", "bind address for the metrics server")
+	enableTLS               = flag.Bool("enable-tls", false, "Connect to zookeeper using TLS. Requires -cert and -cert-key")
+	certPath                = flag.String("cert", "", "path to certificate including any intermediaries")
+	certKeyPath             = flag.String("cert-key", "", "path to certificate key")
 	metricsPath             = flag.String("metrics-path", "/metrics", "path to metrics endpoint")
 	zookeeperAddr           = flag.String("zookeeper", "localhost:2181", "host:port for zookeeper socket")
 	rawLevel                = flag.String("log-level", "info", "log level")
