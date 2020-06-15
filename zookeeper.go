@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"net"
 	"strconv"
 	"strings"
@@ -190,7 +191,7 @@ const (
 func sendZkCommand(fourLetterWord string) (string, bool) {
 	log.Debugf("Connecting to Zookeeper at %s", *zookeeperAddr)
 
-	conn, err := net.Dial("tcp", *zookeeperAddr)
+	conn, err := zkConnect()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Unable to open connection to Zookeeper")
 		return "", false
@@ -222,4 +223,20 @@ func sendZkCommand(fourLetterWord string) (string, bool) {
 	log.Debug("Successfully retrieved reply")
 
 	return buffer.String(), true
+}
+
+func zkConnect() (net.Conn, error) {
+	if *enableTLS {
+		log.Debugf("TLS certificate: %s key: %s", *certPath, *certKeyPath)
+		cert, err := tls.LoadX509KeyPair(*certPath, *certKeyPath)
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Error("Unable to read TLS cert or key")
+			return nil, err
+		}
+		return tls.Dial("tcp", *zookeeperAddr, &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		})
+	}
+
+	return net.Dial("tcp", *zookeeperAddr)
 }
