@@ -1,4 +1,4 @@
-BUILDINFO = $(subst ${GOPATH}/src/,,${PWD})/vendor/github.com/prometheus/common/version
+BUILDINFO = github.com/prometheus/common/version
 
 VERSION  = $(shell git describe --always --tags --dirty=-dirty)
 REVISION = $(shell git rev-parse HEAD)
